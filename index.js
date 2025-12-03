@@ -26,7 +26,7 @@ async function getProducts() {
 // /start komandasi
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
-  bot.sendMessage(chatId, "Assalomu alaykum! Menyudan tanlang 👇✨", {
+  bot.sendMessage(chatId, "Assalomu alaykum! Menyudan tanlang 👇🤍", {
     reply_markup: {
       keyboard: [
         ["📕 Rasmli katalog", "🛍 Buyurtma berish"],
