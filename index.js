@@ -14,7 +14,6 @@ const carts = {};
 async function getProducts() {
   try {
     const res = await axios.get("https://web-bot-node-bqye.onrender.com/api/products");
-    // API data tuzilishi: res.data.products yoki shunga o‘xshash bo‘lishi mumkin
     if (Array.isArray(res.data)) return res.data; 
     if (Array.isArray(res.data.products)) return res.data.products;
     return [];
@@ -47,20 +46,23 @@ bot.on("message", async (msg) => {
 
   if (text === "📕 Katalog") {
     const products = await getProducts();
-
     if (!products.length) return bot.sendMessage(chatId, "Mahsulotlar topilmadi");
 
     for (const p of products) {
-      // agar rasm URL mavjud bo'lmasa, default rasm berish
       const img = p.img || "https://via.placeholder.com/300x200.png?text=No+Image";
-
       await bot.sendPhoto(chatId, img, {
         caption: `*${p.name}*\n💵 Narxi: ${p.price ? p.price + " so'm" : "Noma'lum"}`,
         parse_mode: "Markdown",
         reply_markup: {
           inline_keyboard: [
-            [{ text: "🛒 Savatga qo‘shish", callback_data: `add_${p._id}` }],
-            [{ text: "📄 Batafsil", callback_data: `product_${p._id}` }]
+            [
+              { text: "➕", callback_data: `plus_${p._id}` },
+              { text: "➖", callback_data: `minus_${p._id}` },
+              { text: "🛒 Qo‘shish", callback_data: `add_${p._id}` }
+            ],
+            [
+              { text: "📄 Batafsil", callback_data: `product_${p._id}` }
+            ]
           ]
         }
       });
@@ -93,62 +95,67 @@ bot.on("message", async (msg) => {
 bot.on("callback_query", async (query) => {
   const chatId = query.message.chat.id;
   const data = query.data;
-
   const products = await getProducts();
 
+  // Qo‘shish
   if (data.startsWith("add_")) {
     const id = data.split("_")[1];
-    const product = products.find((p) => p._id === id);
+    const product = products.find(p => p._id === id);
     if (!product) return;
 
     if (!carts[chatId]) carts[chatId] = [];
     const cart = carts[chatId];
-    const exists = cart.find((i) => i._id === id);
-
+    const exists = cart.find(i => i._id === id);
     if (exists) exists.count++;
     else cart.push({ ...product, count: 1 });
 
     bot.answerCallbackQuery(query.id, { text: "Savatga qo‘shildi 🛒" });
   }
 
+  // Batafsil
   if (data.startsWith("product_")) {
     const id = data.split("_")[1];
-    const p = products.find((i) => i._id === id);
+    const p = products.find(i => i._id === id);
     if (!p) return;
 
     const img = p.img || "https://via.placeholder.com/300x200.png?text=No+Image";
-
     bot.sendPhoto(chatId, img, {
       caption: `*${p.name}*\n💵 Narxi: ${p.price ? p.price + " so'm" : "Noma'lum"}\n📄 Tavsif: ${p.description || "Tavsif yo'q"}`,
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
-          [{ text: "➕", callback_data: `plus_${p._id}` }, { text: "➖", callback_data: `minus_${p._id}` }],
-          [{ text: "🛒 Savatga qo‘shish", callback_data: `add_${p._id}` }]
+          [
+            { text: "➕", callback_data: `plus_${p._id}` },
+            { text: "➖", callback_data: `minus_${p._id}` },
+            { text: "🛒 Qo‘shish", callback_data: `add_${p._id}` }
+          ]
         ]
       }
     });
   }
 
+  // + tugma
   if (data.startsWith("plus_")) {
     const id = data.split("_")[1];
     const cart = carts[chatId];
-    const item = cart.find((i) => i._id === id);
+    const item = cart.find(i => i._id === id);
     if (!item) return;
     item.count++;
     bot.answerCallbackQuery(query.id, { text: "Soni oshirildi ➕" });
   }
 
+  // - tugma
   if (data.startsWith("minus_")) {
     const id = data.split("_")[1];
     const cart = carts[chatId];
-    const item = cart.find((i) => i._id === id);
+    const item = cart.find(i => i._id === id);
     if (!item) return;
     if (item.count > 1) item.count--;
     else cart.splice(cart.indexOf(item), 1);
     bot.answerCallbackQuery(query.id, { text: "Soni kamaytirildi ➖" });
   }
 
+  // Savatni tozalash
   if (data === "clear") {
     carts[chatId] = [];
     bot.answerCallbackQuery(query.id, { text: "Savat tozalandi 🧹" });
