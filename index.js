@@ -1,34 +1,31 @@
 const TelegramBot = require("node-telegram-bot-api");
+const axios = require("axios"); // npm install axios
 
 // Bot token
-const token = "8278965358:AAEPvb6vkX7y4BA06QIAUttRZY_1qFJEU3k"; // <-- tokenni shu yerga yozing
+const token = "8278965358:AAEPvb6vkX7y4BA06QIAUttRZY_1qFJEU3k";
 
 // Botni ishga tushirish
 const bot = new TelegramBot(token, { polling: true });
 
-// 📦 Mahsulotlar ro‘yxati
-const products = [
-  {
-    name: "Louis vuitton",
-    price: "500$",
-    img: "https://aeworld.com/wp-content/uploads/2021/05/MENS_FRAGRANCES.jpg"
-  },
-  {
-    name: "Sauvage",
-    price: "120$",
-    img: "https://avatars.mds.yandex.net/get-mpic/5332938/2a00000191a7a4ab9edc53538d348def1abf/orig"
-  },
-  {
-    name: "Lyon Extreme ",
-    price: "50$",
-    img: "https://assets.dragonmart.ae/pictures/0529610_paris-world-lyon-extreme-luxury-eau-de-parfum-85-ml.jpeg"
+// API dan mahsulotlarni olish funksiyasi
+async function getProducts() {
+  try {
+    const response = await axios.get("https://web-bot-node-bqye.onrender.com/api/products");
+    // API dan kelgan ma'lumotni Telegram uchun mos formatga o'tkazamiz
+    return response.data.map(item => ({
+      name: item.name,
+      price: item.price,
+      img: item.img
+    }));
+  } catch (error) {
+    console.error("API dan mahsulotlarni olishda xato:", error.message);
+    return [];
   }
-];
+}
 
-// ▶ /start komandasi + menyu
+// /start komandasi
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
-
   bot.sendMessage(chatId, "Assalomu alaykum! Menyudan tanlang 👇✨", {
     reply_markup: {
       keyboard: [
@@ -40,32 +37,30 @@ bot.onText(/\/start/, (msg) => {
   });
 });
 
-// ▶ Tugmalarni tinglash
-bot.on("message", (msg) => {
+// Tugmalarni tinglash
+bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
-  // ⭐ Rasmli katalog
   if (text === "📕 Rasmli katalog") {
+    const products = await getProducts(); // API dan mahsulotlarni olamiz
+    if (products.length === 0) {
+      bot.sendMessage(chatId, "Mahsulotlar hozircha mavjud emas.");
+      return;
+    }
     products.forEach((product) => {
       bot.sendPhoto(chatId, product.img, {
         caption: `**${product.name}**\n💵 Narxi: *${product.price}*`,
         parse_mode: "Markdown"
       });
     });
-  }
-
-  // ▶ Buyurtma berish
+  } 
   else if (text === "🛍 Buyurtma berish") {
     bot.sendMessage(chatId, "Buyurtma uchun ismingizni yuboring.");
   }
-
-  // ▶ Biz haqimizda
   else if (text === "ℹ Biz haqimizda") {
     bot.sendMessage(chatId, "Namangan Parfume — Namangan shahridagi zamonaviy va sifatli parfyumeriya mahsulotlarini taklif etuvchi yetakchi do‘konlardan biridir. Bizning maqsadimiz har bir mijozimizga o‘ziga mos, original va yuqori sifatli atirlarni taqdim etishdir. ✨");
   }
-
-  // ▶ Bog‘lanish
   else if (text === "📞 Bog‘lanish") {
     bot.sendMessage(chatId, "Aloqa: +998 90 753 50 08");
   }
