@@ -1,13 +1,13 @@
 const TelegramBot = require("node-telegram-bot-api");
 
 // Bot token
-const token = "8278965358:AAEPvb6vkX7y4BA06QIAUttRZY_1qFJEU3k";
+const token = "8278965358:AAH04-_-DxMjMQXO1D4qKWs7kR6I9tgBtTw";
 
 // Kanal ID
-const CHANNEL_ID = -1001234567890;
+const CHANNEL_ID = parfume_nmg_bot;
 
 // Admin ID (o‘zingiz)
-const ADMIN_ID = 123456789;
+const ADMIN_ID = t.me/abubakir_706 ;
 
 const bot = new TelegramBot(token, { polling: true });
 
