@@ -9,19 +9,19 @@ const bot = new TelegramBot(token, { polling: true });
 // 📦 Mahsulotlar ro‘yxati
 const products = [
   {
-    name: "Dior Sauvage",
-    price: "350 000 so‘m",
-    img: "https://i.imgur.com/Vp8YRhZ.jpeg"
+    name: "Louis vuitton",
+    price: "500$",
+    img: "https://aeworld.com/wp-content/uploads/2021/05/MENS_FRAGRANCES.jpg"
   },
   {
-    name: "Chanel Coco",
-    price: "280 000 so‘m",
-    img: "https://i.imgur.com/8BlKcPm.jpeg"
+    name: "Sauvage",
+    price: "120$",
+    img: "https://avatars.mds.yandex.net/get-mpic/5332938/2a00000191a7a4ab9edc53538d348def1abf/orig"
   },
   {
-    name: "Gucci Bloom",
-    price: "300 000 so‘m",
-    img: "https://i.imgur.com/kJ4dj3P.jpeg"
+    name: "Lyon Extreme ",
+    price: "50$",
+    img: "https://assets.dragonmart.ae/pictures/0529610_paris-world-lyon-extreme-luxury-eau-de-parfum-85-ml.jpeg"
   }
 ];
 
@@ -62,11 +62,11 @@ bot.on("message", (msg) => {
 
   // ▶ Biz haqimizda
   else if (text === "ℹ Biz haqimizda") {
-    bot.sendMessage(chatId, "Namangan Parfume – sifatli attorlik mahsulotlari 💖");
+    bot.sendMessage(chatId, "Namangan Parfume — Namangan shahridagi zamonaviy va sifatli parfyumeriya mahsulotlarini taklif etuvchi yetakchi do‘konlardan biridir. Bizning maqsadimiz har bir mijozimizga o‘ziga mos, original va yuqori sifatli atirlarni taqdim etishdir. ✨");
   }
 
   // ▶ Bog‘lanish
   else if (text === "📞 Bog‘lanish") {
-    bot.sendMessage(chatId, "Aloqa: +998 ** *** ** **");
+    bot.sendMessage(chatId, "Aloqa: +998 90 753 50 08");
   }
 });
