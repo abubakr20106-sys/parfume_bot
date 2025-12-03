@@ -41,7 +41,7 @@ bot.on('message', (msg) => {
   } else if (text === "📍 Manzil") {
     bot.sendMessage(chatId, "Bizning manzil: Namangan shahar...");
   } else if (text === "📞 Bog‘lanish") {
-    bot.sendMessage(chatId, "Aloqa: +998 ** *** ** **");
+    bot.sendMessage(chatId, "Aloqa: +998 90 753 50 08");
   } else {
     // boshqa matnlar
     bot.sendMessage(chatId, `Siz yozdingiz: "${text}"`);
