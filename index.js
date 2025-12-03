@@ -33,7 +33,7 @@ bot.onText(/\/start/, (msg) => {
       keyboard: [
         ["📕 Katalog", "🛒 Savat"],
         ["🛍 Buyurtma berish", "ℹ️ Biz haqimizda"],
-        ["📞 Bog‘lanish"]
+        ["🏠 Manzil", "📞 Biz bilan bog‘lanish"]
       ],
       resize_keyboard: true
     }
@@ -51,7 +51,7 @@ bot.on("message", async (msg) => {
     if (!products.length) return bot.sendMessage(chatId, "Mahsulotlar topilmadi");
 
     for (const p of products) {
-      const img = p.img || "https://web-bot-node-bqye.onrender.com/api/products";
+      const img = p.img || "https://via.placeholder.com/300x200.png?text=No+Image";
       await bot.sendPhoto(chatId, img, {
         caption: `*${p.name}*\n💵 Narxi: ${p.price ? p.price + " so'm" : "Noma'lum"}`,
         parse_mode: "Markdown",
@@ -99,9 +99,14 @@ bot.on("message", async (msg) => {
     bot.sendMessage(chatId, "Namangan Parfume — Namangan shahridagi zamonaviy va sifatli parfyumeriya do‘koni. Har bir mijozimizga original va yuqori sifatli atirlar taqdim etamiz.");
   }
 
-  // Bog‘lanish
-  else if (text === "📞 Bog‘lanish") {
-    bot.sendMessage(chatId, "Telefon: +998 90 123 45 67\nEmail: info@namanganparfume.uz\nManzil: Namangan shahar, XYZ ko‘chasi");
+  // Manzil
+  else if (text === "🏠 Manzil") {
+    bot.sendMessage(chatId, "Manzil: Namangan shahar, XYZ ko‘chasi, 123-uy");
+  }
+
+  // Biz bilan bog‘lanish
+  else if (text === "📞 Biz bilan bog‘lanish") {
+    bot.sendMessage(chatId, "Telefon: +998 90 123 45 67\nEmail: info@namanganparfume.uz\nTelegram: @NamanganParfume");
   }
 });
 
