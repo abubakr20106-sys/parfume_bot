@@ -1,218 +1,177 @@
 const TelegramBot = require("node-telegram-bot-api");
 const axios = require("axios");
 
+// YOUR BOT TOKEN
+const token = "TOKENINGNI QOY";
 
-// =========================================
-// BOT TOKEN
-// =========================================
-const token = "8278965358:AAEPvb6vkX7y4BA06QIAUttRZY_1qFJEU3k"; 
-
+// BOT RUN
 const bot = new TelegramBot(token, { polling: true });
 
-// =========================================
-// FOYDALANUVCHI SAVATLARI
-// =========================================
+// SAVAT SAQLANADI
 const carts = {};
 
-function getCartText(cart) {
-  if (!cart || cart.length === 0) return "🛒 Savat bo‘sh!";
-
-  let text = "🛍 **Savatdagi mahsulotlar:**\n\n";
-  cart.forEach((item, index) => {
-    text += `${index + 1}. **${item.name}**\n`;
-    text += `🔢 Soni: *${item.count}*\n`;
-    text += `💵 Narxi: *${item.price} so'm*\n\n`;
-  });
-  return text;
-}
-
-function getCartButtons(cart) {
-  if (!cart || cart.length === 0) return { inline_keyboard: [] };
-
-  return {
-    inline_keyboard: cart.map((item) => [
-      { text: "➖", callback_data: `minus_${item.id}` },
-      { text: `${item.count} dona`, callback_data: "noop" },
-      { text: "➕", callback_data: `plus_${item.id}` },
-      { text: "❌ O'chirish", callback_data: `del_${item.id}` }
-    ])
-  };
-}
-
-// =========================================
 // API DAN MAHSULOTLARNI OLISH
-// =========================================
 async function getProducts() {
   try {
     const res = await axios.get("https://web-bot-node-bqye.onrender.com/api/products");
     return res.data;
-  } catch (e) {
-    console.log("API ERROR:", e.message);
+  } catch (err) {
+    console.log("API error:", err.message);
     return [];
   }
 }
 
-// =========================================
 // /start
-// =========================================
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
 
-  bot.sendMessage(chatId, "Assalomu alaykum! Menyudan tanlang 👇🤍", {
+  if (!carts[chatId]) carts[chatId] = [];
+
+  bot.sendMessage(chatId, "Assalomu alaykum! Menyudan tanlang 👇", {
     reply_markup: {
       keyboard: [
-        ["📕 Katalog", "🛒 Savat"],
-        ["ℹ Biz haqimizda", "📞 Bog‘lanish"]
+        ["📕 Katalog"],
+        ["🛒 Savat", "🛍 Buyurtma berish"]
       ],
       resize_keyboard: true
     }
   });
 });
 
-// =========================================
-// Asosiy tugmalar
-// =========================================
+// 🟦 SMS COMMANDS
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
-  // 📕 Katalog
+  // --- KATALOG ---
   if (text === "📕 Katalog") {
     const products = await getProducts();
 
     if (!products.length) {
-      bot.sendMessage(chatId, "Mahsulotlar topilmadi.");
+      bot.sendMessage(chatId, "Mahsulotlar topilmadi");
       return;
     }
 
-    // Inline tugmalar bilan katalog
-    const buttons = products.map((p) => [
-      { text: p.name, callback_data: `product_${p._id}` }
-    ]);
-
-    bot.sendMessage(chatId, "📕 Mahsulotlar ro‘yxati:", {
-      reply_markup: { inline_keyboard: buttons }
-    });
+    for (const p of products) {
+      await bot.sendPhoto(chatId, p.img, {
+        caption: `**${p.name}**\n💵 Narxi: *${p.price} so'm*`,
+        parse_mode: "Markdown",
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "🛒 Savatga qo‘shish", callback_data: `add_${p._id}` }],
+            [{ text: "📄 Batafsil", callback_data: `product_${p._id}` }]
+          ]
+        }
+      });
+    }
   }
 
-  // 🛒 Savatni ko‘rsatish
+  // --- SAVATNI KO'RISH ---
   if (text === "🛒 Savat") {
     const cart = carts[chatId] || [];
 
-    bot.sendMessage(chatId, getCartText(cart), {
+    if (!cart.length) {
+      return bot.sendMessage(chatId, "Savat bo‘sh 🛒");
+    }
+
+    let txt = "🛒 **Savatdagi mahsulotlar:**\n\n";
+    cart.forEach((item, i) => {
+      txt += `**${item.name}**\n💵 Narx: ${item.price} so'm\n🔢 Soni: ${item.count}\n\n`;
+    });
+
+    bot.sendMessage(chatId, txt, {
       parse_mode: "Markdown",
-      reply_markup: getCartButtons(cart)
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "🧹 Savatni tozalash", callback_data: "clear" }]
+        ]
+      }
     });
   }
 
-  // ℹ Biz haqimizda
-  if (text === "ℹ Biz haqimizda") {
-    bot.sendMessage(
-      chatId,
-      "Namangan Parfume — sifatli va original atirlar do‘koni. Har bir mijozga mos atir! ✨"
-    );
-  }
-
-  // 📞 Bog‘lanish
-  if (text === "📞 Bog‘lanish") {
-    bot.sendMessage(chatId, "☎ Telefon: +998 90 753 50 08");
+  // --- BUYURTMA BERISH ---
+  if (text === "🛍 Buyurtma berish") {
+    bot.sendMessage(chatId, "Ismingizni yuboring:");
   }
 });
 
-// =========================================
-// CALLBACK — INLINE TUGMALAR
-// =========================================
+// 🟥 CALLBACK ACTIONS
 bot.on("callback_query", async (query) => {
   const chatId = query.message.chat.id;
   const data = query.data;
 
-  // Savat yaratish
-  if (!carts[chatId]) carts[chatId] = [];
+  // ADD TO CART
+  if (data.startsWith("add_")) {
+    const id = data.split("_")[1];
 
-  // ============================
-  // Mahsulot sahifasi
-  // ============================
+    const products = await getProducts();
+    const product = products.find((p) => p._id === id);
+
+    if (!product) return;
+
+    if (!carts[chatId]) carts[chatId] = [];
+
+    const cart = carts[chatId];
+    const exists = cart.find((i) => i._id === id);
+
+    if (exists) {
+      exists.count++;
+    } else {
+      cart.push({ ...product, count: 1 });
+    }
+
+    bot.answerCallbackQuery(query.id, { text: "Savatga qo‘shildi 🛒" });
+  }
+
+  // PRODUCT DETAILS
   if (data.startsWith("product_")) {
-    const id = data.split("product_")[1];
+    const id = data.split("_")[1];
+
     const products = await getProducts();
     const p = products.find((i) => i._id === id);
 
     if (!p) return;
 
     bot.sendPhoto(chatId, p.img, {
-      caption: `**${p.name}**\n💵 Narxi: *${p.price} so'm*`,
+      caption: `**${p.name}**\n\n💵 Narxi: *${p.price} so'm*\n📄 Tavsif: ${p.description || "Tavsif yo'q"}`,
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
+          [{ text: "➕", callback_data: `plus_${p._id}` },
+           { text: "➖", callback_data: `minus_${p._id}` }],
           [{ text: "🛒 Savatga qo‘shish", callback_data: `add_${p._id}` }]
         ]
       }
     });
   }
 
-  // ============================
-  // Savatga qo‘shish
-  // ============================
-  if (data.startsWith("add_")) {
-    const id = data.split("add_")[1];
-    const products = await getProducts();
-    const p = products.find((i) => i._id === id);
-
-    const exist = carts[chatId].find((i) => i.id === id);
-
-    if (exist) exist.count++;
-    else carts[chatId].push({ id: p._id, name: p.name, price: p.price, count: 1 });
-
-    bot.answerCallbackQuery(query.id, { text: "Savatga qo‘shildi! 🛒" });
-  }
-
-  // ============================
   // + Qo‘shish
-  // ============================
   if (data.startsWith("plus_")) {
-    const id = data.split("plus_")[1];
-    const item = carts[chatId].find((p) => p.id === id);
-    if (item) item.count++;
+    const id = data.split("_")[1];
+    const cart = carts[chatId];
+    const item = cart.find((i) => i._id === id);
 
-    bot.editMessageText(getCartText(carts[chatId]), {
-      chat_id: chatId,
-      message_id: query.message.message_id,
-      parse_mode: "Markdown",
-      reply_markup: getCartButtons(carts[chatId])
-    });
+    item.count++;
+
+    bot.answerCallbackQuery(query.id, { text: "Soni oshirildi ➕" });
   }
 
-  // ============================
-  // - Kamaytirish
-  // ============================
+  // – Kamaytirish
   if (data.startsWith("minus_")) {
-    const id = data.split("minus_")[1];
-    const item = carts[chatId].find((p) => p.id === id);
+    const id = data.split("_")[1];
+    const cart = carts[chatId];
+    const item = cart.find((i) => i._id === id);
 
-    if (item && item.count > 1) item.count--;
-    else if (item && item.count === 1)
-      carts[chatId] = carts[chatId].filter((p) => p.id !== id);
+    if (item.count > 1) item.count--;
+    else cart.splice(cart.indexOf(item), 1);
 
-    bot.editMessageText(getCartText(carts[chatId]), {
-      chat_id: chatId,
-      message_id: query.message.message_id,
-      parse_mode: "Markdown",
-      reply_markup: getCartButtons(carts[chatId])
-    });
+    bot.answerCallbackQuery(query.id, { text: "Soni kamaytirildi ➖" });
   }
 
-  // ============================
-  // ❌ O'chirish
-  // ============================
-  if (data.startsWith("del_")) {
-    const id = data.split("del_")[1];
-    carts[chatId] = carts[chatId].filter((p) => p.id !== id);
-
-    bot.editMessageText(getCartText(carts[chatId]), {
-      chat_id: chatId,
-      message_id: query.message.message_id,
-      parse_mode: "Markdown",
-      reply_markup: getCartButtons(carts[chatId])
-    });
+  // CLEAR CART
+  if (data === "clear") {
+    carts[chatId] = [];
+    bot.answerCallbackQuery(query.id, { text: "Savat tozalandi 🧹" });
+    bot.sendMessage(chatId, "Savat bo‘sh 🛒");
   }
 });
