@@ -51,7 +51,7 @@ bot.on("message", async (msg) => {
     if (!products.length) return bot.sendMessage(chatId, "Mahsulotlar topilmadi");
 
     for (const p of products) {
-      const img = p.img || "https://via.placeholder.com/300x200.png?text=No+Image";
+      const img = p.img || "https://web-bot-node-bqye.onrender.com/api/products";
       await bot.sendPhoto(chatId, img, {
         caption: `*${p.name}*\n💵 Narxi: ${p.price ? p.price + " so'm" : "Noma'lum"}`,
         parse_mode: "Markdown",
