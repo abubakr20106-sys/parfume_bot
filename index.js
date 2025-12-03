@@ -1,23 +1,49 @@
 const TelegramBot = require('node-telegram-bot-api');
 
-// Bot tokeningizni shu yerga yozing
+// Bot tokeningiz
 const token = '8278965358:AAH04-_-DxMjMQXO1D4qKWs7kR6I9tgBtTw';
 
-// Polling yordamida botni ishga tushirish
+// Botni ishga tushirish
 const bot = new TelegramBot(token, { polling: true });
 
 // /start komandasi
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
-  bot.sendMessage(chatId, `Assalomu aleykum Namangan Parfume ga xush kelibsiz.`);
+
+  // Menyu tugmalari
+  const menu = {
+    reply_markup: {
+      keyboard: [
+        [{ text: "📦 Mahsulotlar" }, { text: "📍 Manzil" }],
+        [{ text: "📞 Bog‘lanish" }]
+      ],
+      resize_keyboard: true
+    }
+  };
+
+  bot.sendMessage(
+    chatId,
+    `Assalomu alaykum! Namangan Parfume botiga xush kelibsiz.\n\nQuyidagi menyudan tanlang 👇`,
+    menu
+  );
 });
 
-// Har qanday matn xabarini qayta ishlash
+// Matnli xabarlarni qayta ishlash
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
-  if (text !== '/start') {
+  // start bo‘lsa qaytarmaymiz
+  if (text === "/start") return;
+
+  if (text === "📦 Mahsulotlar") {
+    bot.sendMessage(chatId, "Bu yerda mahsulotlar ro‘yxati bo‘ladi.");
+  } else if (text === "📍 Manzil") {
+    bot.sendMessage(chatId, "Bizning manzil: Namangan shahar...");
+  } else if (text === "📞 Bog‘lanish") {
+    bot.sendMessage(chatId, "Aloqa: +998 ** *** ** **");
+  } else {
+    // boshqa matnlar
     bot.sendMessage(chatId, `Siz yozdingiz: "${text}"`);
   }
 });
