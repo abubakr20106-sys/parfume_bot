@@ -1,13 +1,13 @@
 const TelegramBot = require("node-telegram-bot-api");
 
-// Bot token
-const token = "8278965358:AAH04-_-DxMjMQXO1D4qKWs7kR6I9tgBtTw";
+// BOT TOKEN — tavsiya: process.env.BOT_TOKEN orqali oling (env faylda saqlang)
+const token = process.env.BOT_TOKEN || "8278965358:AAH04-_-DxMjMQXO1D4qKWs7kR6I9tgBtTw"; // <-- tokenni shu joyga emas, .env ga qo'ying!
 
-// Kanal ID
-const CHANNEL_ID = parfume_nmg_bot;
+// Kanal identifikatori: yoki '@username' yoki kanalning raqamli IDsi (-100...)
+const CHANNEL_ID = process.env.CHANNEL_ID || "@parfume_nmg_bot";
 
-// Admin ID (o‘zingiz)
-const ADMIN_ID = t.me/abubakir_706 ;
+// ADMIN ID — butun son; uni olish uchun botga bir marta /start yuboring va console.log(msg.from.id) qiling
+const ADMIN_ID = Number(process.env.ADMIN_ID || 123456789); // <-- haqiqiy admin id sini bu yerga qo'ying
 
 const bot = new TelegramBot(token, { polling: true });
 
@@ -45,12 +45,21 @@ bot.onText(/\/start/, (msg) => {
     }
   );
 
-  // Kanalga habar
-  bot.sendMessage(
-    CHANNEL_ID,
-    `🎉 Yangi foydalanuvchi: *${msg.from.first_name}* botga kirdi!`,
-    { parse_mode: "Markdown" }
-  );
+  // Kanalga habar yuborishni try/catch ichida qiling — noto'g'ri CHANNEL_ID botni to'xtatmasin
+  try {
+    bot.sendMessage(
+      CHANNEL_ID,
+      `🎉 Yangi foydalanuvchi: *${msg.from.first_name}* botga kirdi!`,
+      { parse_mode: "Markdown" }
+    ).catch(err => {
+      console.error("Kanalga yuborishda xato:", err.message);
+    });
+  } catch (err) {
+    console.error("Kanalga yuborish xatosi (try/catch):", err.message);
+  }
+
+  // OPTIONAL: Konsolga foydalanuvchi id sini chop etib oling (admin id olish uchun)
+  console.log("User started bot:", msg.from.id, msg.from.username);
 });
 
 // ============================
@@ -59,6 +68,9 @@ bot.onText(/\/start/, (msg) => {
 bot.on("callback_query", (query) => {
   const chatId = query.message.chat.id;
   const data = query.data;
+
+  // make sure cart exists
+  if (!carts[chatId]) carts[chatId] = [];
 
   // ---------------------------
   // Mahsulotlar menyusi
@@ -77,6 +89,8 @@ bot.on("callback_query", (query) => {
     };
 
     bot.sendMessage(chatId, "🛍 Mahsulotlardan birini tanlang:", productsMenu);
+    bot.answerCallbackQuery(query.id); // javob qaytarib qo'yamiz
+    return;
   }
 
   // Mahsulotlar
@@ -98,18 +112,29 @@ bot.on("callback_query", (query) => {
         ],
       },
     });
+    bot.answerCallbackQuery(query.id);
+    return;
   }
 
   // ---------------------------
   // Savatga qo‘shish
   // ---------------------------
-  if (data.startsWith("add_")) {
+  if (data && data.startsWith("add_")) {
     const prKey = data.split("_")[1];
     const product = products[prKey];
+
+    if (!product) {
+      bot.answerCallbackQuery(query.id, { text: "Mahsulot topilmadi ❌" });
+      return;
+    }
+
+    // cart init (oldin qilingan bo'lmasa)
+    if (!carts[chatId]) carts[chatId] = [];
 
     carts[chatId].push(product);
 
     bot.answerCallbackQuery(query.id, { text: "Savatga qo‘shildi ✅" });
+    return;
   }
 
   // ---------------------------
@@ -120,6 +145,7 @@ bot.on("callback_query", (query) => {
 
     if (!cart || cart.length === 0) {
       bot.sendMessage(chatId, "🛒 Savat bo‘sh!");
+      bot.answerCallbackQuery(query.id);
       return;
     }
 
@@ -134,6 +160,8 @@ bot.on("callback_query", (query) => {
     text += `\n💰 *Jami: ${total} so‘m*`;
 
     bot.sendMessage(chatId, text, { parse_mode: "Markdown" });
+    bot.answerCallbackQuery(query.id);
+    return;
   }
 
   // ---------------------------
@@ -148,6 +176,8 @@ bot.on("callback_query", (query) => {
     bot.sendMessage(chatId, "👨‍💻 *Admin panel*\n\n— Foydalanuvchilar savati\n— Sotuv statistikasi\n— Mahsulot qo‘shish", {
       parse_mode: "Markdown",
     });
+    bot.answerCallbackQuery(query.id);
+    return;
   }
 
   // ---------------------------
@@ -163,5 +193,10 @@ bot.on("callback_query", (query) => {
         ],
       },
     });
+    bot.answerCallbackQuery(query.id);
+    return;
   }
+
+  // Fallback: agar noma'lum callback bo'lsa
+  bot.answerCallbackQuery(query.id, { text: "Noma'lum amal." });
 });
