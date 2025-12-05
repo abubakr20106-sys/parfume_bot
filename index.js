@@ -3,19 +3,19 @@ const axios = require("axios");
 
 // BOT TOKEN
 const token = "8278965358:AAEPvb6vkX7y4BA06QIAUttRZY_1qFJEU3k";
-
-// BOT RUN
 const bot = new TelegramBot(token, { polling: true });
 
-// SAVAT SAQLANADI
 const carts = {};
 
-// API DAN MAHSULOTLARNI OLISH
+// API’dan mahsulotlarni olish
 async function getProducts() {
   try {
     const res = await axios.get("https://web-bot-node-bqye.onrender.com/api/products");
-    if (Array.isArray(res.data)) return res.data; 
-    if (Array.isArray(res.data.products)) return res.data.products;
+
+    if (res.data.products && Array.isArray(res.data.products)) {
+      return res.data.products;
+    }
+
     return [];
   } catch (err) {
     console.log("API error:", err.message);
@@ -31,12 +31,12 @@ bot.onText(/\/start/, (msg) => {
   bot.sendMessage(chatId, "Assalomu alaykum! Menyudan tanlang 👇", {
     reply_markup: {
       keyboard: [
-        ["📕 Katalog", "🛒 Savat"],
+        ["🖼 Maxsulotlar", "🛒 Savat"],
         ["🛍 Buyurtma berish", "ℹ️ Biz haqimizda"],
-        ["🏠 Manzil", "📞 Biz bilan bog‘lanish"]
+        ["🏠 Manzil", "📞 Biz bilan bog‘lanish"],
       ],
-      resize_keyboard: true
-    }
+      resize_keyboard: true,
+    },
   });
 });
 
@@ -45,28 +45,39 @@ bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
-  // Katalog
-  if (text === "📕 Katalog") {
+  // Maxsulotlar katalogi
+  if (text === "🖼 Maxsulotlar") {
     const products = await getProducts();
-    if (!products.length) return bot.sendMessage(chatId, "Mahsulotlar topilmadi");
 
-    for (const p of products) {
-      const img = p.img || "https://via.placeholder.com/300x200.png?text=No+Image";
+    if (!products.length) {
+      return bot.sendMessage(chatId, "❌ API dan mahsulot topilmadi.");
+    }
+
+    for (const product of products) {
+      const img =
+        product.img ||
+        product.image ||
+        product.imageUrl ||
+        "https://via.placeholder.com/300x200.png?text=No+Image";
+
+      if (!product._id) {
+        console.log("❌ ID yo‘q mahsulot:", product);
+        continue;
+      }
+
       await bot.sendPhoto(chatId, img, {
-        caption: `*${p.name}*\n💵 Narxi: ${p.price ? p.price + " so'm" : "Noma'lum"}`,
+        caption: `💎 *${product.name}*\n💰 Narxi: *${product.price} so'm*`,
         parse_mode: "Markdown",
         reply_markup: {
           inline_keyboard: [
             [
-              { text: "➕", callback_data: `plus_${p._id}` },
-              { text: "➖", callback_data: `minus_${p._id}` },
-              { text: "🛒 Qo‘shish", callback_data: `add_${p._id}` }
+              { text: "➕", callback_data: `plus_${product._id}` },
+              { text: "➖", callback_data: `minus_${product._id}` },
+              { text: "🛒 Qo‘shish", callback_data: `add_${product._id}` },
+              { text: "📄 Batafsil", callback_data: `product_${product._id}` },
             ],
-            [
-              { text: "📄 Batafsil", callback_data: `product_${p._id}` }
-            ]
-          ]
-        }
+          ],
+        },
       });
     }
   }
@@ -84,19 +95,24 @@ bot.on("message", async (msg) => {
     bot.sendMessage(chatId, txt, {
       parse_mode: "Markdown",
       reply_markup: {
-        inline_keyboard: [[{ text: "🧹 Savatni tozalash", callback_data: "clear" }]]
-      }
+        inline_keyboard: [
+          [{ text: "🧹 Savatni tozalash", callback_data: "clear" }],
+        ],
+      },
     });
   }
 
-  // Buyurtma berish
+  // Buyurtma
   else if (text === "🛍 Buyurtma berish") {
     bot.sendMessage(chatId, "Ismingizni yuboring:");
   }
 
   // Biz haqimizda
   else if (text === "ℹ️ Biz haqimizda") {
-    bot.sendMessage(chatId, "Namangan Parfume — Namangan shahridagi zamonaviy va sifatli parfyumeriya do‘koni. Har bir mijozimizga original va yuqori sifatli atirlar taqdim etamiz.");
+    bot.sendMessage(
+      chatId,
+      "Namangan Parfume — Namangan shahridagi zamonaviy va sifatli parfyumeriya do‘koni. Har bir mijozimizga original va yuqori sifatli atirlar taqdim etamiz."
+    );
   }
 
   // Manzil
@@ -104,27 +120,28 @@ bot.on("message", async (msg) => {
     bot.sendMessage(chatId, "Manzil: Namangan shahar, XYZ ko‘chasi, 123-uy");
   }
 
-  // Biz bilan bog‘lanish
+  // Kontakt
   else if (text === "📞 Biz bilan bog‘lanish") {
-    bot.sendMessage(chatId, "Telefon: +998 90 123 45 67\nEmail: info@namanganparfume.uz\nTelegram: @NamanganParfume");
+    bot.sendMessage(chatId, "Telefon: +998 90 753 50 08");
   }
 });
 
-// CALLBACK QUERY
+// CALLBACK HANDLER
 bot.on("callback_query", async (query) => {
   const chatId = query.message.chat.id;
   const data = query.data;
   const products = await getProducts();
 
-  // Qo‘shish
+  // Savatga qo‘shish
   if (data.startsWith("add_")) {
     const id = data.split("_")[1];
-    const product = products.find(p => p._id === id);
+    const product = products.find((p) => p._id == id);
     if (!product) return;
 
     if (!carts[chatId]) carts[chatId] = [];
     const cart = carts[chatId];
-    const exists = cart.find(i => i._id === id);
+    const exists = cart.find((i) => i._id == id);
+
     if (exists) exists.count++;
     else cart.push({ ...product, count: 1 });
 
@@ -134,43 +151,55 @@ bot.on("callback_query", async (query) => {
   // Batafsil
   if (data.startsWith("product_")) {
     const id = data.split("_")[1];
-    const p = products.find(i => i._id === id);
+    const p = products.find((i) => i._id == id);
     if (!p) return;
 
-    const img = p.img || "https://via.placeholder.com/300x200.png?text=No+Image";
+    const img =
+      p.img ||
+      p.image ||
+      p.imageUrl ||
+      "https://via.placeholder.com/300x200.png?text=No+Image";
+
     bot.sendPhoto(chatId, img, {
-      caption: `*${p.name}*\n💵 Narxi: ${p.price ? p.price + " so'm" : "Noma'lum"}\n📄 Tavsif: ${p.description || "Tavsif yo'q"}`,
+      caption: `💎 *${p.name}*\n💰 Narxi: *${p.price} so'm*\n📄 Tavsif: ${
+        p.description || "Tavsif yo'q"
+      }`,
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
           [
             { text: "➕", callback_data: `plus_${p._id}` },
             { text: "➖", callback_data: `minus_${p._id}` },
-            { text: "🛒 Qo‘shish", callback_data: `add_${p._id}` }
-          ]
-        ]
-      }
+            { text: "🛒 Qo‘shish", callback_data: `add_${p._id}` },
+          ],
+        ],
+      },
     });
   }
 
-  // + tugma
+  // Soni oshirish
   if (data.startsWith("plus_")) {
     const id = data.split("_")[1];
     const cart = carts[chatId];
-    const item = cart.find(i => i._id === id);
+    if (!cart) return;
+    const item = cart.find((i) => i._id == id);
     if (!item) return;
+
     item.count++;
     bot.answerCallbackQuery(query.id, { text: "Soni oshirildi ➕" });
   }
 
-  // - tugma
+  // Soni kamaytirish
   if (data.startsWith("minus_")) {
     const id = data.split("_")[1];
     const cart = carts[chatId];
-    const item = cart.find(i => i._id === id);
+    if (!cart) return;
+    const item = cart.find((i) => i._id == id);
     if (!item) return;
+
     if (item.count > 1) item.count--;
     else cart.splice(cart.indexOf(item), 1);
+
     bot.answerCallbackQuery(query.id, { text: "Soni kamaytirildi ➖" });
   }
 
