@@ -47,24 +47,27 @@ bot.on("message", async (msg) => {
 
   // Maxsulotlar katalogi
   if (text === "🖼 Maxsulotlar") {
-    const products = await getProducts();
-
-    if (!products.length) {
+    const res = await axios.get("https://web-bot-node-bqye.onrender.com/api/products");
+  
+    const products = res.data.products; // ✔ To‘g‘ri format
+  
+    if (!products || !products.length) {
       return bot.sendMessage(chatId, "❌ API dan mahsulot topilmadi.");
     }
-
+  
     for (const product of products) {
+  
       const img =
         product.img ||
         product.image ||
         product.imageUrl ||
         "https://via.placeholder.com/300x200.png?text=No+Image";
-
+  
       if (!product._id) {
         console.log("❌ ID yo‘q mahsulot:", product);
         continue;
       }
-
+  
       await bot.sendPhoto(chatId, img, {
         caption: `💎 *${product.name}*\n💰 Narxi: *${product.price} so'm*`,
         parse_mode: "Markdown",
@@ -81,6 +84,7 @@ bot.on("message", async (msg) => {
       });
     }
   }
+  
 
   // Savat
   else if (text === "🛒 Savat") {
