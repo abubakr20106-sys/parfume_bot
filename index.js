@@ -11,11 +11,7 @@ const carts = {};
 async function getProducts() {
   try {
     const res = await axios.get("https://web-bot-node-bqye.onrender.com/api/products");
-
-    if (res.data.products && Array.isArray(res.data.products)) {
-      return res.data.products;
-    }
-
+    if (res.data && Array.isArray(res.data.products)) return res.data.products;
     return [];
   } catch (err) {
     console.log("API error:", err.message);
@@ -47,27 +43,14 @@ bot.on("message", async (msg) => {
 
   // Maxsulotlar katalogi
   if (text === "🖼 Maxsulotlar") {
-    const res = await axios.get("https://web-bot-node-bqye.onrender.com/api/products");
-  
-    const products = res.data.products; // ✔ To‘g‘ri format
-  
-    if (!products || !products.length) {
-      return bot.sendMessage(chatId, "❌ API dan mahsulot topilmadi.");
-    }
-  
+    const products = await getProducts();
+
+    if (!products.length) return bot.sendMessage(chatId, "❌ API dan mahsulot topilmadi.");
+
     for (const product of products) {
-  
-      const img =
-        product.img ||
-        product.image ||
-        product.imageUrl ||
-        "https://via.placeholder.com/300x200.png?text=No+Image";
-  
-      if (!product._id) {
-        console.log("❌ ID yo‘q mahsulot:", product);
-        continue;
-      }
-  
+      const img = product.img || product.image || product.imageUrl || "https://via.placeholder.com/300x200.png?text=No+Image";
+      if (!product._id) continue;
+
       await bot.sendPhoto(chatId, img, {
         caption: `💎 *${product.name}*\n💰 Narxi: *${product.price} so'm*`,
         parse_mode: "Markdown",
@@ -84,7 +67,6 @@ bot.on("message", async (msg) => {
       });
     }
   }
-  
 
   // Savat
   else if (text === "🛒 Savat") {
@@ -98,11 +80,7 @@ bot.on("message", async (msg) => {
 
     bot.sendMessage(chatId, txt, {
       parse_mode: "Markdown",
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "🧹 Savatni tozalash", callback_data: "clear" }],
-        ],
-      },
+      reply_markup: { inline_keyboard: [[{ text: "🧹 Savatni tozalash", callback_data: "clear" }]] },
     });
   }
 
@@ -135,21 +113,22 @@ bot.on("callback_query", async (query) => {
   const chatId = query.message.chat.id;
   const data = query.data;
   const products = await getProducts();
+  if (!products.length) return;
 
+  const cart = carts[chatId] || [];
+  
   // Savatga qo‘shish
   if (data.startsWith("add_")) {
     const id = data.split("_")[1];
     const product = products.find((p) => p._id == id);
     if (!product) return;
 
-    if (!carts[chatId]) carts[chatId] = [];
-    const cart = carts[chatId];
     const exists = cart.find((i) => i._id == id);
-
     if (exists) exists.count++;
     else cart.push({ ...product, count: 1 });
 
-    bot.answerCallbackQuery(query.id, { text: "Savatga qo‘shildi 🛒" });
+    carts[chatId] = cart;
+    return bot.answerCallbackQuery(query.id, { text: "Savatga qo‘shildi 🛒" });
   }
 
   // Batafsil
@@ -158,16 +137,10 @@ bot.on("callback_query", async (query) => {
     const p = products.find((i) => i._id == id);
     if (!p) return;
 
-    const img =
-      p.img ||
-      p.image ||
-      p.imageUrl ||
-      "https://via.placeholder.com/300x200.png?text=No+Image";
+    const img = p.img || p.image || p.imageUrl || "https://via.placeholder.com/300x200.png?text=No+Image";
 
-    bot.sendPhoto(chatId, img, {
-      caption: `💎 *${p.name}*\n💰 Narxi: *${p.price} so'm*\n📄 Tavsif: ${
-        p.description || "Tavsif yo'q"
-      }`,
+    return bot.sendPhoto(chatId, img, {
+      caption: `💎 *${p.name}*\n💰 Narxi: *${p.price} so'm*\n📄 Tavsif: ${p.description || "Tavsif yo'q"}`,
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
@@ -184,33 +157,31 @@ bot.on("callback_query", async (query) => {
   // Soni oshirish
   if (data.startsWith("plus_")) {
     const id = data.split("_")[1];
-    const cart = carts[chatId];
-    if (!cart) return;
     const item = cart.find((i) => i._id == id);
     if (!item) return;
 
     item.count++;
-    bot.answerCallbackQuery(query.id, { text: "Soni oshirildi ➕" });
+    carts[chatId] = cart;
+    return bot.answerCallbackQuery(query.id, { text: "Soni oshirildi ➕" });
   }
 
   // Soni kamaytirish
   if (data.startsWith("minus_")) {
     const id = data.split("_")[1];
-    const cart = carts[chatId];
-    if (!cart) return;
     const item = cart.find((i) => i._id == id);
     if (!item) return;
 
     if (item.count > 1) item.count--;
     else cart.splice(cart.indexOf(item), 1);
 
-    bot.answerCallbackQuery(query.id, { text: "Soni kamaytirildi ➖" });
+    carts[chatId] = cart;
+    return bot.answerCallbackQuery(query.id, { text: "Soni kamaytirildi ➖" });
   }
 
   // Savatni tozalash
   if (data === "clear") {
     carts[chatId] = [];
     bot.answerCallbackQuery(query.id, { text: "Savat tozalandi 🧹" });
-    bot.sendMessage(chatId, "Savat bo‘sh 🛒");
+    return bot.sendMessage(chatId, "Savat bo‘sh 🛒");
   }
 });
