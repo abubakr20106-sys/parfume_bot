@@ -52,7 +52,7 @@ bot.on("message", async (msg) => {
       if (!product._id) continue;
 
       await bot.sendPhoto(chatId, img, {
-        caption: `💎 *${product.name}*\n💰 Narxi: *${product.price} so'm*`,
+        caption: `💎 *${product.name}*\n💰 Narxi: *${product.price} $*`,
         parse_mode: "Markdown",
         reply_markup: {
           inline_keyboard: [
@@ -75,7 +75,7 @@ bot.on("message", async (msg) => {
 
     let txt = "🛒 **Savatdagi mahsulotlar:**\n\n";
     cart.forEach((item) => {
-      txt += `*${item.name}*\n💵 Narxi: ${item.price} so'm\n🔢 Soni: ${item.count}\n\n`;
+      txt += `*${item.name}*\n💵 Narxi: ${item.price} $\n🔢 Soni: ${item.count}\n\n`;
     });
 
     bot.sendMessage(chatId, txt, {
@@ -140,7 +140,7 @@ bot.on("callback_query", async (query) => {
     const img = p.img || p.image || p.imageUrl || "https://via.placeholder.com/300x200.png?text=No+Image";
 
     return bot.sendPhoto(chatId, img, {
-      caption: `💎 *${p.name}*\n💰 Narxi: *${p.price} so'm*\n📄 Tavsif: ${p.description || "Tavsif yo'q"}`,
+      caption: `💎 *${p.name}*\n💰 Narxi: *${p.price} $*\n📄 Tavsif: ${p.description || "Tavsif yo'q"}`,
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
