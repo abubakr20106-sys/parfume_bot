@@ -100,7 +100,7 @@ bot.on("message", async (msg) => {
   else if (text === "ℹ️ Biz haqimizda") {
     bot.sendMessage(
       chatId,
-      "Namangan Parfume — Namangan shahridagi zamonaviy va sifatli parfyumeriya do‘koni. Har bir mijozimizga original va yuqori sifatli atirlar taqdim etamiz."
+      "Namangan Parfume — Namangan shahridagi zamonaviy va sifatli parfyumeriya do‘koni. Har bir mijozimizga original va yuqori sifatli atirlar taqdim etamiz.✨"
     );
   }
 
