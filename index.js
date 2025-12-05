@@ -11,10 +11,15 @@ const carts = {};
 async function getProducts() {
   try {
     const res = await axios.get("https://web-bot-node-bqye.onrender.com/api/products");
-    if (res.data && Array.isArray(res.data.products)) return res.data.products;
-    return [];
+    // Tekshirish: products mavjud va array ekanligini
+    if (res.data && Array.isArray(res.data.products) && res.data.products.length > 0) {
+      return res.data.products;
+    } else {
+      console.log("API: Mahsulotlar topilmadi yoki bo'sh array qaytmoqda");
+      return [];
+    }
   } catch (err) {
-    console.log("API error:", err.message);
+    console.log("API xato:", err.message);
     return [];
   }
 }
@@ -45,7 +50,9 @@ bot.on("message", async (msg) => {
   if (text === "🖼 Maxsulotlar") {
     const products = await getProducts();
 
-    if (!products.length) return bot.sendMessage(chatId, "❌ API dan mahsulot topilmadi.");
+    if (!products.length) {
+      return bot.sendMessage(chatId, "❌ API dan mahsulot topilmadi. Iltimos, keyinroq urinib ko‘ring.");
+    }
 
     for (const product of products) {
       const img = product.img || product.image || product.imageUrl || "https://via.placeholder.com/300x200.png?text=No+Image";
