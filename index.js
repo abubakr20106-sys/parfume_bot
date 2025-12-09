@@ -11,15 +11,9 @@ const carts = {};
 async function getProducts() {
   try {
     const res = await axios.get("https://web-bot-node-bqye.onrender.com/api/products");
-    // Tekshirish: products mavjud va array ekanligini
-    if (res.data && Array.isArray(res.data.products) && res.data.products.length > 0) {
-      return res.data.products;
-    } else {
-      console.log("API: Mahsulotlar topilmadi yoki bo'sh array qaytmoqda");
-      return [];
-    }
+    return res.data;
   } catch (err) {
-    console.log("API xato:", err.message);
+    console.error("API ERROR:", err.message);
     return [];
   }
 }
