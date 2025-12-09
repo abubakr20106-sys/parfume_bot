@@ -49,17 +49,16 @@ bot.on("message", async (msg) => {
   // Maxsulotlar katalogi
   if (text === "🖼 Maxsulotlar") {
     const products = await getProducts();
-
-    if (!products.length) {
-      return bot.sendMessage(chatId, "❌ API dan mahsulot topilmadi. Iltimos, keyinroq urinib ko‘ring.");
+  
+    if (!products || products.length === 0) {
+      return bot.sendMessage(chatId, "❌ API dan mahsulot topilmadi.");
     }
-
+  
     for (const product of products) {
-      const img = product.img || product.image || product.imageUrl || "https://via.placeholder.com/300x200.png?text=No+Image";
-      if (!product._id) continue;
-
+      const img = product.image || null; // Rasm bo‘lmasa xatolik chiqmasin
+  
       await bot.sendPhoto(chatId, img, {
-        caption: `💎 *${product.name}*\n💰 Narxi: *${product.price} $*`,
+        caption: `💎 *${product.name}*\n💰 Narxi: *${product.price} so'm*\n📄 *${product.description || ""}*`,
         parse_mode: "Markdown",
         reply_markup: {
           inline_keyboard: [
@@ -74,6 +73,7 @@ bot.on("message", async (msg) => {
       });
     }
   }
+  
 
   // Savat
   else if (text === "🛒 Savat") {
