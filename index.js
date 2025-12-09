@@ -67,7 +67,6 @@ bot.on("message", async (msg) => {
       });
     }
   }
-  
 
   // Savat
   else if (text === "🛒 Savat") {
@@ -76,7 +75,7 @@ bot.on("message", async (msg) => {
 
     let txt = "🛒 **Savatdagi mahsulotlar:**\n\n";
     cart.forEach((item) => {
-      txt += `*${item.name}*\n💵 Narxi: ${item.price} $\n🔢 Soni: ${item.count}\n\n`;
+      txt += `*${item.name}*\n💵 Narxi: ${item.price} so'm\n🔢 Soni: ${item.count}\n\n`;
     });
 
     bot.sendMessage(chatId, txt, {
@@ -117,7 +116,7 @@ bot.on("callback_query", async (query) => {
   if (!products.length) return;
 
   const cart = carts[chatId] || [];
-  
+
   // Savatga qo‘shish
   if (data.startsWith("add_")) {
     const id = data.split("_")[1];
@@ -129,7 +128,7 @@ bot.on("callback_query", async (query) => {
     else cart.push({ ...product, count: 1 });
 
     carts[chatId] = cart;
-    return bot.answerCallbackQuery(query.id, { text: "Savatga qo‘shildi 🛒" });
+    return bot.answerCallbackQuery(query.id, { text: "Savatga qo‘shildi +1 🛒" });
   }
 
   // Batafsil
@@ -138,10 +137,14 @@ bot.on("callback_query", async (query) => {
     const p = products.find((i) => i._id == id);
     if (!p) return;
 
-    const img = p.img || p.image || p.imageUrl || "https://via.placeholder.com/300x200.png?text=No+Image";
+    const img =
+      p.img ||
+      p.image ||
+      p.imageUrl ||
+      "https://via.placeholder.com/300x200.png?text=No+Image";
 
     return bot.sendPhoto(chatId, img, {
-      caption: `💎 *${p.name}*\n💰 Narxi: *${p.price} $*\n📄 Tavsif: ${p.description || "Tavsif yo'q"}`,
+      caption: `💎 *${p.name}*\n💰 Narxi: *${p.price} so'm*\n📄 Tavsif: ${p.description || "Tavsif yo'q"}`,
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
@@ -163,7 +166,8 @@ bot.on("callback_query", async (query) => {
 
     item.count++;
     carts[chatId] = cart;
-    return bot.answerCallbackQuery(query.id, { text: "Soni oshirildi ➕" });
+
+    return bot.answerCallbackQuery(query.id, { text: "+1 qo‘shildi ➕" });
   }
 
   // Soni kamaytirish
@@ -172,11 +176,16 @@ bot.on("callback_query", async (query) => {
     const item = cart.find((i) => i._id == id);
     if (!item) return;
 
-    if (item.count > 1) item.count--;
-    else cart.splice(cart.indexOf(item), 1);
+    if (item.count > 1) {
+      item.count--;
+      bot.answerCallbackQuery(query.id, { text: "-1 kamaytirildi ➖" });
+    } else {
+      cart.splice(cart.indexOf(item), 1);
+      bot.answerCallbackQuery(query.id, { text: "Savatdan olib tashlandi ❌" });
+    }
 
     carts[chatId] = cart;
-    return bot.answerCallbackQuery(query.id, { text: "Soni kamaytirildi ➖" });
+    return;
   }
 
   // Savatni tozalash
