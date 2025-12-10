@@ -52,7 +52,7 @@ bot.on("message", async (msg) => {
       const img = product.image || null; // Rasm bo‘lmasa xatolik chiqmasin
   
       await bot.sendPhoto(chatId, img, {
-        caption: `💎 *${product.name}*\n💰 Narxi: *${product.price} so'm*\n📄 *${product.description || ""}*`,
+        caption: `💎 *${product.name}*\n💰 Narxi: *${product.price} $*\n📄 *${product.description || ""}*`,
         parse_mode: "Markdown",
         reply_markup: {
           inline_keyboard: [
