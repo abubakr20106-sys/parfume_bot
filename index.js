@@ -75,7 +75,7 @@ bot.on("message", async (msg) => {
 
     let txt = "🛒 **Savatdagi mahsulotlar:**\n\n";
     cart.forEach((item) => {
-      txt += `*${item.name}*\n💵 Narxi: ${item.price} so'm\n🔢 Soni: ${item.count}\n\n`;
+      txt += `*${item.name}*\n💵 Narxi: ${item.price} $\n🔢 Soni: ${item.count}\n\n`;
     });
 
     bot.sendMessage(chatId, txt, {
