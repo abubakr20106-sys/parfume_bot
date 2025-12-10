@@ -7,7 +7,9 @@ const axios = require("axios");
 const token = "8278965358:AAEPvb6vkX7y4BA06QIAUttRZY_1qFJEU3k";
 const bot = new TelegramBot(token, { polling: true });
 
+// ===============================
 // ADMIN ID — O'ZGARTIRASIZ!!!
+// ===============================
 const ADMIN_ID = 748927843;
 
 // ===============================
@@ -64,7 +66,7 @@ bot.on("message", async (msg) => {
 
     for (const product of products) {
       await bot.sendPhoto(chatId, product.image, {
-        caption: `💎 *${product.name}*\n💰 Narxi: *${product.price} $*\n📄 *${product.description || ""}*`,
+        caption: `💎 *${product.name}*\n💰 Narxi: *${product.price} $*\n📄 ${product.description || ""}`,
         parse_mode: "Markdown",
         reply_markup: {
           inline_keyboard: [
@@ -121,49 +123,49 @@ bot.on("message", async (msg) => {
     bot.sendMessage(chatId, "Telefon: +998 90 753 50 08");
   }
 
-  // ===============================
+  // =================================
   // BUYURTMA — ISM
-  // ===============================
-  if (carts[chatId] && carts[chatId].step === "name") {
-    carts[chatId].name = text;
+  // =================================
+  if (carts[chatId]?.step === "name") {
+    carts[chatId].order.name = text;
     carts[chatId].step = "phone";
 
     return bot.sendMessage(chatId, "📞 Telefon raqamingizni kiriting:");
   }
 
-  // ===============================
-  // BUYURTMA — TELEFON RAQAM
-  // ===============================
-  if (carts[chatId] && carts[chatId].step === "phone") {
-    carts[chatId].phone = text;
-    carts[chatId].step = "done";
+  // =================================
+  // BUYURTMA — TELEFON
+  // =================================
+  if (carts[chatId]?.step === "phone") {
+    carts[chatId].order.phone = text;
+    carts[chatId].step = "location";
 
-    const cart = carts[chatId];
-
-    let orderText = "🛍 *Yangi buyurtma!*\n\n";
-    orderText += `👤 Ism: *${cart.name}*\n`;
-    orderText += `📞 Telefon: *${cart.phone}*\n\n`;
-    orderText += "📦 *Buyurtma tarkibi:*\n\n";
-
-    let totalSum = 0;
-
-    cart.forEach((item) => {
-      const sum = item.price * item.count;
-      totalSum += sum;
-      orderText += `• ${item.name} — ${item.count} dona — ${sum} $\n`;
+    return bot.sendMessage(chatId, "📍 Lokatsiya yuboring:", {
+      reply_markup: {
+        keyboard: [
+          [{ text: "📍 Lokatsiya yuborish", request_location: true }]
+        ],
+        resize_keyboard: true,
+        one_time_keyboard: true
+      }
     });
+  }
 
-    orderText += `\n💰 *Jami: ${totalSum} $*\n`;
+  // =================================
+  // BUYURTMA — LOKATSIYA
+  // =================================
+  if (msg.location && carts[chatId]?.step === "location") {
+    carts[chatId].order.location = msg.location;
+    carts[chatId].step = "confirm";
 
-    // Admin ga yuborish
-    bot.sendMessage(ADMIN_ID, orderText, { parse_mode: "Markdown" });
-
-    bot.sendMessage(
-      chatId,
-      "✅ Buyurtmangiz qabul qilindi! Operator tez orada siz bilan bog‘lanadi."
-    );
-
-    carts[chatId] = []; // Savatni tozalash
+    return bot.sendMessage(chatId, "✔️ Buyurtmani tasdiqlaysizmi?", {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "Tasdiqlash ✅", callback_data: "confirm_order" }],
+          [{ text: "Bekor qilish ❌", callback_data: "cancel_order" }],
+        ],
+      },
+    });
   }
 });
 
@@ -246,8 +248,43 @@ bot.on("callback_query", async (query) => {
       return bot.answerCallbackQuery(query.id, { text: "Savat bo‘sh!" });
 
     carts[chatId].step = "name";
+    carts[chatId].order = {}; 
+
     bot.answerCallbackQuery(query.id);
     bot.sendMessage(chatId, "✍️ Ismingizni kiriting:");
+  }
+
+  // ✔️ Buyurtma tasdiqlash
+  if (data === "confirm_order") {
+    const order = carts[chatId].order;
+    let total = 0;
+    let textAdmin = "🛍 *Yangi Buyurtma!*\n\n";
+
+    textAdmin += `👤 Ism: *${order.name}*\n`;
+    textAdmin += `📞 Tel: *${order.phone}*\n`;
+    textAdmin += `📍 Lokatsiya: https://maps.google.com/?q=${order.location.latitude},${order.location.longitude}\n\n`;
+    textAdmin += "📦 *Mahsulotlar:*\n";
+
+    cart.forEach((item) => {
+      if (item.name) {
+        const sum = item.price * item.count;
+        total += sum;
+        textAdmin += `• ${item.name} — ${item.count} dona — ${sum} $\n`;
+      }
+    });
+
+    textAdmin += `\n💰 *Jami: ${total} $*`;
+
+    bot.sendMessage(ADMIN_ID, textAdmin, { parse_mode: "Markdown" });
+    bot.sendMessage(chatId, "✅ Buyurtma tasdiqlandi! Operator tez orada aloqaga chiqadi.");
+
+    carts[chatId] = [];
+  }
+
+  // ❌ Buyurtma bekor qilish
+  if (data === "cancel_order") {
+    carts[chatId] = [];
+    return bot.sendMessage(chatId, "❌ Buyurtma bekor qilindi.");
   }
 
   // 🧹 Savatni tozalash
